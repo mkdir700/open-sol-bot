@@ -1,5 +1,13 @@
 # Solana Smart Trader
 
+⚠️⚠️⚠️⚠️⚠️
+
+**当前项目已不再维护，因为作者最近在写一个类似 GMGN 那样的交易机器人（包含跟单功能）。新的 bot 目前处于私有，不过很快将会和大家见面，经过初步测试后仍会在此仓库中开源，感谢大家支持！**
+
+**The current project is no longer maintained, as the author has recently been working on a trading bot similar to GMGN (including copy trading functionality). The new bot is currently private, but it will soon be available to everyone. After initial testing, it will still be open-sourced in this repository. Thank you all for your support!**
+
+⚠️⚠️⚠️⚠️⚠️
+
 ## 简介
 
 Solana Smart Trader 是一个用于监控 Solana 区块链上聪明钱钱包的工具。该程序能够实时跟踪这些钱包的交易信息，并自动执行跟随聪明钱的买入或卖出操作，帮助用户抓住投资机会。

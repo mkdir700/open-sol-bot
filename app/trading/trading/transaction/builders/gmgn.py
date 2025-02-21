@@ -1,11 +1,11 @@
 import httpx
+from cache.token_info import TokenInfoCache
+from common.config import settings
+from common.constants import SOL_DECIMAL, WSOL
 from solana.rpc.async_api import AsyncClient
 from solders.keypair import Keypair  # type: ignore
 from solders.transaction import VersionedTransaction  # type: ignore
 
-from cache.token_info import TokenInfoCache
-from common.config import settings
-from common.constants import SOL_DECIMAL, WSOL
 from trading.exceptions import NoRouteFound
 from trading.swap import SwapDirection, SwapInType
 from trading.tx import sign_transaction_from_raw
@@ -18,9 +18,25 @@ class GMGNTransactionBuilder(TransactionBuilder):
 
     def __init__(self, rpc_client: AsyncClient) -> None:
         self.client = httpx.AsyncClient(base_url="https://gmgn.ai")
-        self.api_path = "/defi/router/v1/sol/tx/get_swap_route"
         self.rpc_client = rpc_client
         self.token_info_cache = TokenInfoCache()
+
+    async def get_swap_transaction(self, params: dict) -> str:
+        response = await self.client.get(
+            "/defi/router/v1/sol/tx/get_swap_route", params=params
+        )
+        response.raise_for_status()
+        js = response.json()
+        if js["code"] != 0:
+            msg = js["msg"]
+            if "no route" in msg:
+                raise NoRouteFound(msg)
+            raise ValueError("Error: {}, Argument: {}".format(js["msg"], params))
+
+        data = js["data"]
+        raw_tx = data["raw_tx"]
+        swap_tx = raw_tx["swapTransaction"]
+        return swap_tx
 
     async def build_swap_transaction(
         self,
@@ -83,20 +99,6 @@ class GMGNTransactionBuilder(TransactionBuilder):
             "fee": fee,
         }
 
-        # TODO: 获取报价解耦
-        resp = await self.client.get(self.api_path, params=params)
-        resp.raise_for_status()
-
-        js = resp.json()
-        if js["code"] != 0:
-            msg = js["msg"]
-            if "no route" in msg:
-                raise NoRouteFound(msg)
-            raise Exception("Error: {}, Argument: {}".format(js["msg"], params))
-
-        data = js["data"]
-        raw_tx = data["raw_tx"]
-        swap_tx = raw_tx["swapTransaction"]
-
+        swap_tx = await self.get_swap_transaction(**params)
         signed_tx = await sign_transaction_from_raw(swap_tx, keypair)
         return signed_tx

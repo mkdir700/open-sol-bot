@@ -1,11 +1,12 @@
 from typing import Optional, Type
 
-from solana.rpc.async_api import AsyncClient
-from solders.keypair import Keypair
-from solders.signature import Signature
-
 from common.log import logger
 from common.utils.jito import JitoClient
+from common.utils.utils import get_async_client
+from solana.rpc.async_api import AsyncClient
+from solders.keypair import Keypair  # type: ignore
+from solders.signature import Signature  # type: ignore
+
 from trading.swap import SwapDirection, SwapInType
 from trading.transaction.base import TransactionSender
 from trading.transaction.builders.base import TransactionBuilder
@@ -110,6 +111,7 @@ class TradingService:
         """
         self.builder = builder
         self.sender = sender
+        self.default_sender = DefaultTransactionSender(get_async_client())
 
     @classmethod
     def create(
@@ -171,12 +173,13 @@ class TradingService:
             use_jito=use_jito,
             priority_fee=priority_fee,
         )
-        logger.debug(f"Built swap transaction: {transaction}")
 
-        try:
-            signature = await self.sender.send_transaction(transaction)
-            logger.info(f"Transaction sent successfully: {signature}")
-            return signature
-        except Exception as e:
-            logger.error(f"Failed to send transaction: {e}")
-            return None
+        if use_jito:
+            sender = self.sender
+        else:
+            sender = self.default_sender
+
+        logger.debug(f"Built swap transaction: {transaction}")
+        signature = await sender.send_transaction(transaction)
+        logger.info(f"Transaction sent successfully: {signature}")
+        return signature

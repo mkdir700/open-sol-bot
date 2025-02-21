@@ -1,15 +1,14 @@
 import asyncio
 import time
-import httpx
 from typing import Optional
 
 import backoff
-
+import httpx
 from common.cp.swap_event import SwapEventConsumer
 from common.cp.swap_result import SwapResultProducer
 from common.log import logger
-from common.types.swap import SwapEvent, SwapResult
 from common.prestart import pre_start
+from common.types.swap import SwapEvent, SwapResult
 from db.redis import RedisClient
 from trading.copytrade import CopyTradeProcessor
 from trading.executor import TradingExecutor
@@ -47,8 +46,6 @@ class Trading:
         """处理单个交易事件的核心逻辑"""
         async with self.semaphore:
             logger.info(f"Processing swap event: {swap_event}")
-            sig = None
-            swap_result = None
 
             try:
                 sig = await self._execute_swap(swap_event)
